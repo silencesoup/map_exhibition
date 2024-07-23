@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>事件地图</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            width: 100%;
+            height: 600px;
+        }
+
+        #event-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            cursor: pointer;
+            margin: 5px 0;
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .event-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>事件地图</h1>
+    <div style="display: flex;">
+        <div id="event-list" style="flex: 1; margin-right: 10px;">
+            <!-- 事件列表将在这里生成 -->
+        </div>
+        <div id="map" style="flex: 3;"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([25, 102], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+        }).addTo(map);
+
+        // Load GeoJSON data
+        fetch('events.geojson')
+            .then(response => response.json())
+            .then(data => {
+                var geojsonLayer = L.geoJSON(data, {
+                    onEachFeature: function (feature, layer) {
+                        var popupContent = `<strong>开始时间:</strong> ${feature.properties['开始时间']}<br>
+                                            <strong>结束时间:</strong> ${feature.properties['结束时间']}<br>
+                                            <strong>经济损失:</strong> ${feature.properties['经济损失']}<br>
+                                            <strong>死亡人口:</strong> ${feature.properties['死亡人口']}<br>
+                                            <strong>受伤人口:</strong> ${feature.properties['受伤人口']}<br>
+                                            <strong>失踪人口:</strong> ${feature.properties['失踪人口']}<br>
+                                            <strong>降雨量:</strong> ${feature.properties['降雨量']}`;
+                        layer.bindPopup(popupContent);
+
+                        // Add event item to list
+                        var eventList = document.getElementById('event-list');
+                        var eventItem = document.createElement('div');
+                        eventItem.className = 'event-item';
+                        eventItem.innerHTML = `事件 ${feature.properties['id']} - ${feature.properties['发生区县']}`;
+                        eventItem.onclick = function () {
+                            map.setView(layer.getLatLng(), 10);
+                            layer.openPopup();
+                        };
+                        eventList.appendChild(eventItem);
+                    }
+                }).addTo(map);
+            })
+            .catch(error => {
+                console.error('Error loading the GeoJSON file:', error);
+            });
+    </script>
+</body>
+
+</html>
